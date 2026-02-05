@@ -154,8 +154,7 @@ describe('Dependabot Jira Sync', () => {
       expect.any(Object), // jiraClient
       expect.objectContaining({
         projectKey: 'TEST',
-        issueType: 'Bug',
-        priority: 'Medium'
+        issueType: 'Bug'
       }),
       parsedAlert,
       false // dryRun

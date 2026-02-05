@@ -132,7 +132,6 @@ jobs:
           jira-project-key:
             ${{ secrets.JIRA_PROJECT_KEY || vars.JIRA_PROJECT_KEY }}
           jira-issue-type: 'Security Vulnerability'
-          jira-priority: 'High'
           jira-labels: 'dependabot,security,auto-created'
           jira-assignee: 'security-team-lead'
 
@@ -188,9 +187,16 @@ jobs:
 | Input             | Description            | Default               | Required |
 | ----------------- | ---------------------- | --------------------- | -------- |
 | `jira-issue-type` | Jira issue type        | `Bug`                 | ❌       |
-| `jira-priority`   | Default Jira priority  | `Medium`              | ❌       |
 | `jira-labels`     | Comma-separated labels | `dependabot,security` | ❌       |
 | `jira-assignee`   | Default assignee       | _none_                | ❌       |
+
+**Note**: JIRA issue priority is automatically mapped from the Dependabot alert
+severity:
+
+- `Low` → Low
+- `Medium` → Medium
+- `High` → High
+- `Critical` → Blocker
 
 ### Severity-Based Due Dates
 
@@ -244,7 +250,7 @@ You have **three ways** to configure the action (in order of precedence):
    `Settings → Secrets → Variables`
 3. **🔄 Workflow env** (For dynamic values): Set in workflow file
 
-**Example Priority**:
+**Example Priority Configuration**:
 `${{ secrets.JIRA_URL || vars.JIRA_URL || 'fallback-value' }}`
 
 | Setting            | Secrets | Variables | Notes                               |

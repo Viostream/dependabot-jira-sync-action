@@ -81,6 +81,22 @@ export function createJiraClient(jiraUrl, username, apiToken) {
 }
 
 /**
+ * Map Dependabot alert severity to JIRA priority
+ * @param {string} severity - Alert severity (critical, high, medium, low)
+ * @returns {string} JIRA priority name
+ */
+export function mapSeverityToPriority(severity) {
+  const severityMap = {
+    critical: 'Blocker',
+    high: 'High',
+    medium: 'Medium',
+    low: 'Low'
+  }
+
+  return severityMap[severity?.toLowerCase()] || 'Medium'
+}
+
+/**
  * Calculate due date based on severity and alert creation date
  * @param {string} severity - Alert severity (critical, high, medium, low)
  * @param {Object} dueDaysConfig - Due days configuration
@@ -154,13 +170,16 @@ export async function createJiraIssue(
   alert,
   dryRun = false
 ) {
-  const { projectKey, issueType, priority, labels, assignee } = config
+  const { projectKey, issueType, labels, assignee } = config
 
   const dueDate = calculateDueDate(
     alert.severity,
     config.dueDays,
     alert.createdAt
   )
+
+  // Map severity to priority instead of using config priority
+  const priority = mapSeverityToPriority(alert.severity)
 
   const description = {
     type: 'doc',

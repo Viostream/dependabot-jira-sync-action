@@ -39,12 +39,42 @@ const {
   updateJiraIssue,
   findOpenDependabotIssues,
   extractAlertIdFromIssue,
-  closeJiraIssue
+  closeJiraIssue,
+  mapSeverityToPriority
 } = await import('../src/jira.js')
 
 describe('Jira API Functions', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+  })
+
+  describe('mapSeverityToPriority', () => {
+    it('should map critical severity to Blocker priority', () => {
+      expect(mapSeverityToPriority('critical')).toBe('Blocker')
+    })
+
+    it('should map high severity to High priority', () => {
+      expect(mapSeverityToPriority('high')).toBe('High')
+    })
+
+    it('should map medium severity to Medium priority', () => {
+      expect(mapSeverityToPriority('medium')).toBe('Medium')
+    })
+
+    it('should map low severity to Low priority', () => {
+      expect(mapSeverityToPriority('low')).toBe('Low')
+    })
+
+    it('should handle case insensitive mapping', () => {
+      expect(mapSeverityToPriority('CRITICAL')).toBe('Blocker')
+      expect(mapSeverityToPriority('High')).toBe('High')
+    })
+
+    it('should default to Medium for unknown severity', () => {
+      expect(mapSeverityToPriority('unknown')).toBe('Medium')
+      expect(mapSeverityToPriority(null)).toBe('Medium')
+      expect(mapSeverityToPriority(undefined)).toBe('Medium')
+    })
   })
 
   describe('createJiraClient', () => {
@@ -299,7 +329,7 @@ describe('Jira API Functions', () => {
               ])
             }),
             issuetype: { name: 'Bug' },
-            priority: { name: 'High' },
+            priority: { name: 'Blocker' },
             duedate: '2023-01-16',
             labels: ['dependabot', 'security'],
             assignee: { name: 'security-team' }
@@ -342,7 +372,7 @@ describe('Jira API Functions', () => {
       const issueData = mockAxiosInstance.post.mock.calls[0][1]
       expect(issueData.fields.labels).toBeUndefined()
       expect(issueData.fields.assignee).toBeUndefined()
-      expect(issueData.fields.priority).toEqual({ name: 'Medium' })
+      expect(issueData.fields.priority).toEqual({ name: 'Blocker' })
       expect(issueData.fields.duedate).toBeDefined()
     })
 

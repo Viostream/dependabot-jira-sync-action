@@ -51,10 +51,6 @@ inputs:
     description: 'Jira issue type for created issues'
     required: false
     default: 'Bug'
-  jira-priority:
-    description: 'Default Jira priority for issues'
-    required: false
-    default: 'Medium'
   jira-labels:
     description: 'Comma-separated list of labels to add to Jira issues'
     required: false

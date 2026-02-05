@@ -72,7 +72,6 @@ function getConfig() {
       apiToken: jiraApiToken,
       projectKey: jiraProjectKey,
       issueType: core.getInput('jira-issue-type') || 'Bug',
-      priority: core.getInput('jira-priority') || 'Medium',
       labels: core.getInput('jira-labels') || 'dependabot,security',
       assignee: core.getInput('jira-assignee') || null,
       dueDays
