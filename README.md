@@ -190,8 +190,8 @@ jobs:
 | `jira-labels`     | Comma-separated labels | `dependabot,security` | ❌       |
 | `jira-assignee`   | Default assignee       | _none_                | ❌       |
 
-**Note**: JIRA issue priority is automatically mapped from the Dependabot alert
-severity:
+**Note**: JIRA issue priority is automatically mapped from the Dependabot
+alertzseverity:
 
 - `Low` → Low
 - `Medium` → Medium

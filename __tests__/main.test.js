@@ -157,6 +157,8 @@ describe('Dependabot Jira Sync', () => {
         issueType: 'Bug'
       }),
       parsedAlert,
+      'test-owner',
+      'test-repo',
       false // dryRun
     )
 
@@ -235,6 +237,8 @@ describe('Dependabot Jira Sync', () => {
       expect.any(Object),
       expect.any(Object),
       expect.any(Object),
+      'test-owner',
+      'test-repo',
       true // dryRun = true
     )
   })

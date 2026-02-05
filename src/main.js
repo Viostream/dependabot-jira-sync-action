@@ -149,7 +149,9 @@ export async function run() {
         const existingIssue = await findExistingIssue(
           jiraClient,
           config.jira.projectKey,
-          parsedAlert.id
+          parsedAlert.id,
+          owner,
+          repo
         )
 
         if (existingIssue) {
@@ -173,6 +175,8 @@ export async function run() {
             jiraClient,
             config.jira,
             parsedAlert,
+            owner,
+            repo,
             config.behavior.dryRun
           )
           issuesCreated++
@@ -198,7 +202,9 @@ export async function run() {
         // Find all open Dependabot issues in Jira
         const openIssues = await findOpenDependabotIssues(
           jiraClient,
-          config.jira.projectKey
+          config.jira.projectKey,
+          owner,
+          repo
         )
 
         for (const issue of openIssues) {

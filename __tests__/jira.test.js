@@ -204,11 +204,17 @@ describe('Jira API Functions', () => {
 
       mockAxiosInstance.get.mockResolvedValue(mockResponse)
 
-      const result = await findExistingIssue(mockAxiosInstance, 'SEC', 42)
+      const result = await findExistingIssue(
+        mockAxiosInstance,
+        'SEC',
+        42,
+        'test-owner',
+        'test-repo'
+      )
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/search/jql', {
         params: {
-          jql: 'project = "SEC" AND summary ~ "Dependabot Alert #42"',
+          jql: 'project = "SEC" AND summary ~ "Dependabot Alert #42" AND labels = "dependabot-repo-test-repo"',
           fields: 'key,summary,status,updated'
         }
       })
@@ -218,20 +224,38 @@ describe('Jira API Functions', () => {
 
     it('should reject invalid project keys', async () => {
       await expect(
-        findExistingIssue(mockAxiosInstance, 'SEC"; DROP TABLE alerts; --', 42)
+        findExistingIssue(
+          mockAxiosInstance,
+          'SEC"; DROP TABLE alerts; --',
+          42,
+          'test-owner',
+          'test-repo'
+        )
       ).rejects.toThrow('Invalid project key format')
     })
 
     it('should reject invalid alert IDs', async () => {
       await expect(
-        findExistingIssue(mockAxiosInstance, 'SEC', 'invalid')
+        findExistingIssue(
+          mockAxiosInstance,
+          'SEC',
+          'invalid',
+          'test-owner',
+          'test-repo'
+        )
       ).rejects.toThrow('Invalid alert ID')
     })
 
     it('should return null if no issues found', async () => {
       mockAxiosInstance.get.mockResolvedValue({ data: { issues: [] } })
 
-      const result = await findExistingIssue(mockAxiosInstance, 'SEC', 42)
+      const result = await findExistingIssue(
+        mockAxiosInstance,
+        'SEC',
+        42,
+        'test-owner',
+        'test-repo'
+      )
 
       expect(result).toBeNull()
     })
@@ -240,7 +264,13 @@ describe('Jira API Functions', () => {
       const searchError = new Error('Search failed')
       mockAxiosInstance.get.mockRejectedValue(searchError)
 
-      const result = await findExistingIssue(mockAxiosInstance, 'SEC', 42)
+      const result = await findExistingIssue(
+        mockAxiosInstance,
+        'SEC',
+        42,
+        'test-owner',
+        'test-repo'
+      )
 
       expect(result).toBeNull()
       expect(mockCore.warning).toHaveBeenCalledWith(
@@ -301,6 +331,8 @@ describe('Jira API Functions', () => {
         mockAxiosInstance,
         mockConfig,
         mockAlert,
+        'test-owner',
+        'test-repo',
         false
       )
 
@@ -331,7 +363,12 @@ describe('Jira API Functions', () => {
             issuetype: { name: 'Bug' },
             priority: { name: 'Blocker' },
             duedate: '2023-01-16',
-            labels: ['dependabot', 'security'],
+            labels: [
+              'dependabot',
+              'dependabot-repo-test-repo',
+              'dependabot',
+              'security'
+            ],
             assignee: { name: 'security-team' }
           })
         })
@@ -346,6 +383,8 @@ describe('Jira API Functions', () => {
         mockAxiosInstance,
         mockConfig,
         mockAlert,
+        'test-owner',
+        'test-repo',
         true
       )
 
@@ -367,10 +406,20 @@ describe('Jira API Functions', () => {
       const mockResponse = { data: { key: 'SEC-124' } }
       mockAxiosInstance.post.mockResolvedValue(mockResponse)
 
-      await createJiraIssue(mockAxiosInstance, minimalConfig, mockAlert, false)
+      await createJiraIssue(
+        mockAxiosInstance,
+        minimalConfig,
+        mockAlert,
+        'test-owner',
+        'test-repo',
+        false
+      )
 
       const issueData = mockAxiosInstance.post.mock.calls[0][1]
-      expect(issueData.fields.labels).toBeUndefined()
+      expect(issueData.fields.labels).toEqual([
+        'dependabot',
+        'dependabot-repo-test-repo'
+      ])
       expect(issueData.fields.assignee).toBeUndefined()
       expect(issueData.fields.priority).toEqual({ name: 'Blocker' })
       expect(issueData.fields.duedate).toBeDefined()
@@ -381,7 +430,14 @@ describe('Jira API Functions', () => {
       mockAxiosInstance.post.mockRejectedValue(apiError)
 
       await expect(
-        createJiraIssue(mockAxiosInstance, mockConfig, mockAlert, false)
+        createJiraIssue(
+          mockAxiosInstance,
+          mockConfig,
+          mockAlert,
+          'test-owner',
+          'test-repo',
+          false
+        )
       ).rejects.toThrow('Jira create issue failed')
 
       expect(mockCore.error).toHaveBeenCalledWith(
@@ -512,11 +568,16 @@ describe('Jira API Functions', () => {
 
       mockAxiosInstance.get.mockResolvedValue(mockResponse)
 
-      const result = await findOpenDependabotIssues(mockAxiosInstance, 'SEC')
+      const result = await findOpenDependabotIssues(
+        mockAxiosInstance,
+        'SEC',
+        'test-owner',
+        'test-repo'
+      )
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/search/jql', {
         params: {
-          jql: 'project = "SEC" AND labels = "dependabot" AND resolution IS EMPTY',
+          jql: 'project = "SEC" AND labels = "dependabot" AND labels = "dependabot-repo-test-repo" AND resolution IS EMPTY',
           fields: 'key,summary,description,status',
           maxResults: 100
         }
@@ -532,14 +593,24 @@ describe('Jira API Functions', () => {
 
     it('should reject invalid project keys', async () => {
       await expect(
-        findOpenDependabotIssues(mockAxiosInstance, 'SEC"; OR 1=1; --')
+        findOpenDependabotIssues(
+          mockAxiosInstance,
+          'SEC"; OR 1=1; --',
+          'test-owner',
+          'test-repo'
+        )
       ).rejects.toThrow('Invalid project key format')
     })
 
     it('should handle empty search results', async () => {
       mockAxiosInstance.get.mockResolvedValue({ data: { issues: [] } })
 
-      const result = await findOpenDependabotIssues(mockAxiosInstance, 'SEC')
+      const result = await findOpenDependabotIssues(
+        mockAxiosInstance,
+        'SEC',
+        'test-owner',
+        'test-repo'
+      )
 
       expect(result).toHaveLength(0)
       expect(mockCore.info).toHaveBeenCalledWith(
@@ -551,7 +622,12 @@ describe('Jira API Functions', () => {
       const searchError = new Error('JQL syntax error')
       mockAxiosInstance.get.mockRejectedValue(searchError)
 
-      const result = await findOpenDependabotIssues(mockAxiosInstance, 'SEC')
+      const result = await findOpenDependabotIssues(
+        mockAxiosInstance,
+        'SEC',
+        'test-owner',
+        'test-repo'
+      )
 
       expect(result).toHaveLength(0)
       expect(mockCore.warning).toHaveBeenCalledWith(

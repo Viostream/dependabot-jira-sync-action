@@ -124,9 +124,17 @@ export function calculateDueDate(severity, dueDaysConfig, createdAt) {
  * @param {Object} jiraClient - Jira API client
  * @param {string} projectKey - Jira project key
  * @param {number} alertId - Dependabot alert ID
+ * @param {string} repoOwner - Repository owner
+ * @param {string} repoName - Repository name
  * @returns {Promise<Object|null>} Existing issue or null
  */
-export async function findExistingIssue(jiraClient, projectKey, alertId) {
+export async function findExistingIssue(
+  jiraClient,
+  projectKey,
+  alertId,
+  repoOwner,
+  repoName
+) {
   // Validate inputs
   if (!validateProjectKey(projectKey)) {
     throw new Error(`Invalid project key format: ${projectKey}`)
@@ -134,13 +142,14 @@ export async function findExistingIssue(jiraClient, projectKey, alertId) {
 
   const sanitizedProjectKey = sanitizeForJQL(projectKey)
   const sanitizedAlertId = parseInt(alertId, 10)
+  const repoLabel = `dependabot-repo-${repoName}`.toLowerCase()
 
   if (isNaN(sanitizedAlertId)) {
     throw new Error(`Invalid alert ID: ${alertId}`)
   }
 
   try {
-    const jql = `project = "${sanitizedProjectKey}" AND summary ~ "Dependabot Alert #${sanitizedAlertId}"`
+    const jql = `project = "${sanitizedProjectKey}" AND summary ~ "Dependabot Alert #${sanitizedAlertId}" AND labels = "${repoLabel}"`
 
     const response = await jiraClient.get('/search/jql', {
       params: {
@@ -161,6 +170,8 @@ export async function findExistingIssue(jiraClient, projectKey, alertId) {
  * @param {Object} jiraClient - Jira API client
  * @param {Object} config - Jira configuration
  * @param {Object} alert - Parsed Dependabot alert
+ * @param {string} repoOwner - Repository owner
+ * @param {string} repoName - Repository name
  * @param {boolean} dryRun - Whether this is a dry run
  * @returns {Promise<Object>} Created issue data
  */
@@ -168,6 +179,8 @@ export async function createJiraIssue(
   jiraClient,
   config,
   alert,
+  repoOwner,
+  repoName,
   dryRun = false
 ) {
   const { projectKey, issueType, labels, assignee } = config
@@ -200,6 +213,20 @@ export async function createJiraIssue(
       {
         type: 'paragraph',
         content: []
+      },
+      {
+        type: 'paragraph',
+        content: [
+          {
+            type: 'text',
+            text: 'Repository: ',
+            marks: [{ type: 'strong' }]
+          },
+          {
+            type: 'text',
+            text: `${repoOwner}/${repoName}`
+          }
+        ]
       },
       {
         type: 'paragraph',
@@ -419,10 +446,15 @@ export async function createJiraIssue(
     }
   }
 
-  // Add labels if provided
+  // Add labels including repository-specific label
+  const repoLabel = `dependabot-repo-${repoName}`.toLowerCase()
+  const allLabels = ['dependabot', repoLabel]
+
   if (labels && labels.length > 0) {
-    issueData.fields.labels = labels.split(',').map((label) => label.trim())
+    allLabels.push(...labels.split(',').map((label) => label.trim()))
   }
+
+  issueData.fields.labels = allLabels
 
   // Add assignee if provided
   if (assignee) {
@@ -633,21 +665,31 @@ export async function updateJiraIssue(
 }
 
 /**
- * Find all open Dependabot issues in a Jira project
+ * Find all open Dependabot issues in a Jira project for a specific repository
  * @param {Object} jiraClient - Axios instance for Jira API
  * @param {string} projectKey - Jira project key
+ * @param {string} repoOwner - Repository owner
+ * @param {string} repoName - Repository name
  * @returns {Promise<Array>} Array of open Dependabot issues
  */
-export async function findOpenDependabotIssues(jiraClient, projectKey) {
+export async function findOpenDependabotIssues(
+  jiraClient,
+  projectKey,
+  repoOwner,
+  repoName
+) {
   // Validate inputs
   if (!validateProjectKey(projectKey)) {
     throw new Error(`Invalid project key format: ${projectKey}`)
   }
 
   const sanitizedProjectKey = sanitizeForJQL(projectKey)
-  const jql = `project = "${sanitizedProjectKey}" AND labels = "dependabot" AND resolution IS EMPTY`
+  const repoLabel = `dependabot-repo-${repoName}`.toLowerCase()
+  const jql = `project = "${sanitizedProjectKey}" AND labels = "dependabot" AND labels = "${repoLabel}" AND resolution IS EMPTY`
 
-  core.info(`Searching for open Dependabot issues in project ${projectKey}`)
+  core.info(
+    `Searching for open Dependabot issues in project ${projectKey} for repository ${repoOwner}/${repoName}`
+  )
 
   try {
     const response = await jiraClient.get('/search/jql', {
